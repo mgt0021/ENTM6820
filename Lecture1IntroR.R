@@ -110,7 +110,7 @@ df[1] # returns  1st column
 df[1,2] # first row, second col
 df[, "value"] #returns column named "value"
 
-df$value # anothger way to access column by name
+df$value # another way to access column by name
 df$name[1] # 1st value in name col
 
 # Subsetting dataframes
