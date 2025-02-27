@@ -3,8 +3,7 @@ title: "Lecture4RMarkdown"
 author: "MT"
 date: "2025-02-27"
 output: 
-  md_document:      
-  variant: gfm
+  word_document: 
   html_document:
       toc: true
       toc_float: true

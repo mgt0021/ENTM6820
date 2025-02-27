@@ -19,7 +19,7 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 sample.data.bac <- read.csv("BacterialAlpha.csv", na.strings = "na")
 sample.data.bac$Time_Point <- as.factor(sample.data.bac$Time_Point)
 sample.data.bac$Crop <- as.factor(sample.data.bac$Crop)
-sample.data.bac$Crop <- factor(sample.data.bac$Crop, level = c("Soil", "Cotton", "Soybean")) #relevel
+sample.data.bac$Crop <- factor(sample.data.bac$Crop, levels = c("Soil", "Cotton", "Soybean")) #relevel
 
 
 
