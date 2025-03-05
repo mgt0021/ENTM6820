@@ -1,0 +1,106 @@
+---
+title: "CodingChallege1Practice"
+author: "MT"
+date: "2025-03-05"
+output: 
+  github_document: 
+  html_document:
+---
+
+- Where do you type code?
+  - viewing window
+- Where is the output of the code?
+  - console
+- Where do plots show up?
+  - plots tab
+- What is a global environment?
+  - the area where all generated objects populate
+- How do you get help for a function through R studio?
+  - help tab or help() function
+- What is an R package?
+  - downloadable prewritten functions/code 
+- What is a function?
+  - chunk of code that can perform actions on an input and spit out an output  
+- How do you find the installed and loaded packages?
+  - packages tab
+- What is a working directory, and how do you find it?
+  - getwd() - the folder in your computer that all the project files are stored within
+- What is a relative file path and how is it different than an absolute file path?
+  - a relative file path is a path that points back to the working directory but an absolute file path is saved on your individual computer and can't be tranferred to other computers easily. 
+  
+Explain the steps to start a new R project connected to a GitHub repository.
+
+- create a new repo in git Hub and create a readme. Go to r and start a project and make sure to start one with version control. Paste link from github repo into r when it prompts. 
+
+Please explain the different data classes and how they are similar and different
+from each other.
+
+- Vector - one dimensional, one data type of scalar objects
+- Dataframe - 2D and multiple data types
+- Matrix - 2D but all one data type
+
+Create a vector named 'z' with the values 1 to 200
+```{r}
+z <- (1:200)
+```
+
+Print the mean and standard deviation of z on the console
+```{r}
+mean(z)
+sd(z)
+```
+
+Create a logical vector named zlog that is 'TRUE' for z values greater than 30
+and 'FALSE' otherwise.
+```{r}
+zlog <- (z>30)
+```
+
+
+Make a dataframe with z and zlog as columns. Name the dataframe zdf
+```{r}
+zdf <- data.frame(z, zlog)
+```
+
+Change the column names in your new dataframe to equal “zvec” and “zlogic”
+```{r}
+colnames(zdf) <- c("zvec", "zlogic")
+```
+
+Make a new column in your dataframe equal to zvec squared (i.e., z2). Call the
+new column zsquared.
+```{r}
+zdf$zsquared <- (zdf$zvec)^2
+```
+
+Subset the dataframe with and without the subset() function to only include
+values of zsquared greater than 10 and less than 100
+```{r}
+zdf[(zdf$zsquared > 10) & (zdf$zsquared < 100),]
+subset(zdf, zsquared >10 & zsquared <100)
+```
+
+Subset the zdf dataframe to only include the values on row 26
+```{r}
+zdf[26,]
+```
+
+Subset the zdf dataframe to only include the values in the column zsquared in
+the 180th row.
+```{r}
+zdf$zsquared[180]
+```
+
+Download the Tips.csv file from Canvas. Use the read.csv() function to read the
+data into R so that the missing values are properly coded. **Note the missing values are reported in the data as a period (i.e., “.”). How do you know the data were read
+correctly?
+```{r read csv}
+tips <- read.csv("TipsR.csv", na.strings = ".")
+```
+
+
+The periods were replaced with NA in the df. 
+```{r, echo = FALSE}
+tips
+```
+
