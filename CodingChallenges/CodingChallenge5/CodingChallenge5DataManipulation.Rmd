@@ -1,0 +1,70 @@
+---
+title: 'Coding Challenge 5: Data manipulation'
+author: "Madelyn Thompson"
+date: "2025-03-21"
+output: 
+  word_document:
+  md_document: 
+    variant: gfm
+  html_document:
+---
+
+```{r}
+library(tidyverse)
+```
+
+
+#### Q1. Load in data using relative file path
+```{r}
+diversity <- read.csv("DiversityData.csv")
+str(diversity)
+
+metadata <- read.csv("Metadata.csv")
+str(metadata)
+```
+Is something broken? Why does the chunk run with one file path, but the knitting requires a different file path?  
+
+#### Q2. Join dataframes together by code column
+```{r}
+alpha <- left_join(metadata, diversity, by = "Code")
+head(alpha)
+```
+
+#### Q3. Calculate Pielou's Evenness (Shannon / log(richness))
+```{r}
+alpha_even <- mutate(alpha, evenness = shannon / log(richness))
+head(alpha_even)
+```
+
+#### Q4. Summarize to find the mean and std error of evenness grouped by crop over time 
+```{r}
+alpha_average <- alpha_even %>%
+  group_by(Crop, Time_Point) %>% 
+  summarise(Mean = mean(evenness), n = n(), std.dev = sd(evenness)) %>% 
+  mutate(std.err = std.dev/sqrt(n))
+alpha_average
+```
+
+#### Q5. Calculate the difference between the mean evenness of the crop types and soil at each time point
+```{r}
+alpha_average2 <- alpha_average %>%
+  select(Crop, Time_Point, Mean) %>%
+  pivot_wider(names_from = Crop, values_from = Mean) %>% 
+  mutate(diff.soybean.even = Soil-Soybean) %>%
+  mutate(diff.cotton.even = Soil-Cotton)
+alpha_average2
+```
+
+#### Q6. Create a plot 
+```{r}
+alpha_average2 %>%
+  select(diff.soybean.even, diff.cotton.even, Time_Point) %>%
+  pivot_longer(cols = c(diff.soybean.even, diff.cotton.even), names_to = "diff") %>%
+  ggplot(aes(x=Time_Point, y = value, color = diff)) +
+  geom_line() +
+  xlab("Time(hrs)") +
+  ylab("Difference from soil in Pielou's evenness") +
+  theme_classic() +
+  scale_color_discrete(name = "Crop", labels = c("Cotton", "Soybean"))
+```
+
