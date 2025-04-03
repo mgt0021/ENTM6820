@@ -1,0 +1,244 @@
+---
+title: 'Lecture 7: Linear Models'
+author: "Madelyn Thompson"
+date: "2025-04-02"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r}
+library(tidyverse)
+library(lme4)
+library(emmeans)  #
+library(multcomp) # multiple comparisons
+```
+
+
+In this tutorial, we will learn the basics of R’s capabilities in statistical tests from the perspective of the linear model. If you understand the linear model, you should understand other statistical tests since all (ANOVA, ANCOVA, Multivariable linear model, t-tests, generalized linear models, mixed effect linear models, correlation), are unified under the concepts of a linear model. 
+
+ 
+
+If you need more information on any material covered here and much more precise explanations than I could ever provide, please see Dr. Steury's lectures here: (https://webhome.auburn.edu/~tds0009/wild7150.html)
+
+ 
+
+In all of this tutorial, we are concerned with the basic linear equation.
+
+In a standard math class you may have learned in high-school, we would write this as
+
+y = mx + b
+
+Where y is our response, m is our slope, x is the other variable, and b is the intercept.
+
+In statistics we write this as
+
+y(hat) = β0 + β1x
+
+where y(hat) = equation - β0 = intercept - β1 = slope - x = x points
+
+The actual modeled line is equal to the equation, which adds on the error term. yi = β0 + β1xi + ε~N(0,σ)
+
+where yi (y sub i) = each point on the y axis - β0 = intercept - β1 = slope - xi = each x point - then ε = error - and N(0,σ) = normal distribution with a mean 0 and standard deviation = sigma
+
+The goal of all of this is to estimate three terms. - slope - intercept - standard deviation
+
+The goal is to minimize the distance from each point to the line. In statistical terms, we want to minimize the sum of squared errors or SSE. The sum of squares of the regression (SSR) is the distance between the best fit line and the average. Adding these together equals the total sum of squares. Partitioning this into SSR and SSE is related to pvalue. The smaller the SSE and higher the SSR, the smaller the p-value.
+
+Then, we want to know if it is statistically significant. What is the chance we get the result? - that is your p-value.
+
+The null hypothesis is that H0 = No slope or that β1 = 0
+
+In general: - as slope goes up p-value goes down - as sample size goes up p-value goes down - as noise (error) goes down p-value goes down
+
+
+### Continuous x and y
+
+First step is always visualizing data. You'll want to do a scatterplot for two continuous vars
+```{r}
+data("mtcars")
+
+ggplot(mtcars, aes(x = wt, y = mpg)) +
+  geom_smooth(method = lm, se = FALSE, color = "grey") +
+  geom_point(aes(color = wt)) +
+  xlab("Weight") + 
+  ylab("Miles per gallon") +
+  scale_colour_gradient(low = "forestgreen", high = "black") +
+  theme_classic()
+```
+It looks like there is a strong relationship. But how do we know if this is an important/siginificant relationship? 
+
+Modeling
+```{r}
+lm1 <- lm(mpg ~wt, data = mtcars)
+summary(lm1)
+```
+
+slope is not equal to 0, intercept estimate looks good, R squared tells us how much variation in y is explained by x (around 74% here)
+
+ANOVA - not usually used for continuous x variables but could be used here
+```{r}
+anova(lm1)  #effect of weight is significant - matches our anova p-val from before
+cor.test(mtcars$wt, mtcars$mpg) #pval is same again 
+```
+Corrleation - closer to -1 or 1, the stronger the relationship between variables
+All models are esentially the same, running a linear regression 
+
+
+### Assumptions of a linear model: 
+- y is cont
+- error is normally distributed
+- rel is linear
+- homoskedasticity
+- no autocorrelation (independent samples)
+- consistent sigma 
+
+These modesl are robust to moderate violations of assumptions but you can look at your residuals
+```{r}
+model <- lm(mpg~wt, data = mtcars)
+
+ggplot(model, aes(y = .resid, x = .fitted)) +
+  geom_point() +
+  geom_hline(yintercept = 0)
+```
+
+
+
+### Categorical x variable
+- t-test and anova
+- this data should really be run as a glm with a poisson link function (it is integer/count data)
+
+```{r}
+bull.rich <- read.csv("Lectures/Bull_richness.csv")
+
+#filter
+bull.rich.subset <- bull.rich %>% 
+  filter(GrowthStage == "V8" & Treatment == "Conv.")
+  
+#plot!! 
+ggplot(data = bull.rich.subset, aes(x=Fungicide, y=richness)) +
+  geom_boxplot()
+
+```
+
+t-test
+```{r}
+t.test(richness~Fungicide, data = bull.rich.subset)
+
+#this will be the same results 
+summary(lm(richness~Fungicide, data = bull.rich.subset))
+```
+These give the same results! 
+t.test: 11.75 fungi species in control compared to 4.583 in Fungicide 
+lm: we found 7.167 fewer species of fungi in treatment compared to control 
+
+What about multiple categories: anova! 
+```{r}
+bull.rich.multi <- bull.rich %>% 
+  filter(Fungicide == "C" & Treatment == "Conv." & Crop == "Corn")
+
+#visualize - looks like some differences
+ggplot(data= bull.rich.multi, aes(x=GrowthStage, y = richness)) +
+  geom_boxplot()
+
+# test effect of growth stage on richness 
+bull.rich.multi$GrowthStage <- factor(bull.rich.multi$GrowthStage, levels = c("V6", "V8", "V15"))
+summary(lm(richness~GrowthStage, data = bull.rich.multi)) #should get same anova p val
+anova(lm(richness~GrowthStage, data = bull.rich.multi))   #should get same anova p val
+# but anova only tells you that some groups are different but not which ones are different from each other 
+#post hoc test - multiple groups 
+
+
+lm3 <- lm(richness~GrowthStage, data = bull.rich.multi)
+lmmeans <- emmeans(lm3, ~GrowthStage)   #runs least squared means (means estimated by the linear model)
+
+results_lmmeans <- cld(lmmeans, alpha = 0.05, details = TRUE) # outputs which groups are different from each other 
+# .group number shows which ones are the same and sig different from each other 
+
+```
+
+
+### Interactions 
+does the effect of growth stage depend on fungicide treatment? 
+```{r}
+bull.rich.sub3 <- bull.rich %>%
+  filter(Treatment == "Conv." & Crop == "Corn")
+
+bull.rich.sub3$GrowthStage <- factor(bull.rich.sub3$GrowthStage, levels = c("V6", "V8", "V15"))
+```
+
+model with interation factor 
+```{r}
+# write it like this
+lm.inter <- lm(richness ~ GrowthStage + Fungicide + GrowthStage:Fungicide, data = bull.rich.sub3)
+
+# or like this
+lm(richness ~ GrowthStage*Fungicide, data = bull.rich.sub3)
+
+summary(lm.inter) #find sig terms
+
+anova(lm.inter) # this actually gives same result as fdrop? hm 
+
+lm.internoint <- lm(richness ~ GrowthStage + Fungicide, data = bull.rich.sub3)
+anova(lm.inter, lm.internoint)
+```
+
+So the interaction term is significant. In general you want to look at the most complex interaction that is significant and look at that first. But this means that the effect of fungicide is dependent on the growthstage, or in other words at least one comparison of fungicide within growthstage or growthstage within fungicide is significant.
+
+For this study we more care about the effect of fungicide over the levels of growthstage so we can plot that easily.
+
+```{r}
+bull.rich.sub3 %>%
+  ggplot(aes(x = GrowthStage, y = richness, fill = Fungicide)) +
+  geom_boxplot()
+```
+
+So, by visualization, we can see that it looks like the V8 fungicide affected richness more than others, and by V15, they recovered.
+
+But how do we know? In this case, we have to do a post-hoc test within the levels of growthstage.
+```{r}
+lsmeans <- emmeans(lm.inter, ~Fungicide|GrowthStage) # estimate lsmeans of variety within siteXyear; effect of fungicide within each growthstage 
+Results_lsmeans <- cld(lsmeans, alpha = 0.05, reversed = TRUE, details = TRUE) # contrast with Tukey ajustment
+Results_lsmeans
+```
+only sig effect of fungicide in growth stage v8 
+
+
+### Mixed Effects Models
+
+more advanced statistical design
+- fixed effects - affects mean of y 
+- random effects - affects variation in y; things you don't care about, like spatial variation, block, year, field, etc. 
+
+decide based on the context of your design 
+Common fixed effects
+
+- Treatment
+- Species
+- gene
+
+
+Common random effects (blocking factor)
+
+- Year
+- replicate
+- trial
+- Individuals
+- Fields
+```{r}
+#package lme4 
+lme0 <- lm(richness ~ GrowthStage*Fungicide, data = bull.rich.sub3)
+lme1 <- lmer(richness ~ GrowthStage*Fungicide + (1|Rep), data = bull.rich.sub3)
+summary(lme1)
+summary(lme0) # compare model with random effects to one without
+```
+
+For some terms, it actually makes the standard error of our betas go down, which means we have better estimates of our betas, and we are more confident that we are estimating them correctly in our linear models, which means we have more power to detect differences.
+
+```{r}
+lsmeans2 <- emmeans(lme1, ~Fungicide|GrowthStage) # estimate lsmeans of variety within siteXyear; effect of fungicide within each growthstage 
+Results_lsmeans2 <- cld(lsmeans2, alpha = 0.05, reversed = TRUE, details = TRUE) # contrast with Tukey ajustment
+Results_lsmeans2
+```
+still the same results but it does soak up some error
